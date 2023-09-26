@@ -36,22 +36,27 @@ class NRTC(avtc.AVTC):
         outputFile = f'{self.outputDir}/{fileName}.mp4'
         outputFilePart = f'{outputFile}.part'
         errorFile = f'{outputFile}.error'
-        os.rename(file, inputFile)
 
-        print(f'{self.workingDir}/{file}')
+        if not os.path.isfile(f'{file}.lock'):
+            with open(f'{file}.lock', 'w') as f:
+                pass
 
-        transcodeArgs = [
-          'ffmpeg', '-i', inputFile, '-filter:v',
-          'scale=w=\'max(1920,iw)\':h=\'min(1080,ih)\':force_original_aspect_ratio=decrease:force_divisible_by=8',
-          '-c:v', 'libx265', '-c:a', 'aac', '-movflags', '+faststart',
-          '-map_metadata', '-1', '-y', '-f', 'mp4',
-          outputFilePart]
-        returncode, stderrList = self.runSubprocess(transcodeArgs)
-        if returncode == 0:
-            os.rename(outputFilePart, outputFile)
-        else:
-            self.writeErrorFile(errorFile, transcodeArgs, stderrList)
-        return None
+            print(f'{self.workingDir}/{file}')
+
+            transcodeArgs = [
+              'ffmpeg', '-i', file, '-filter:v',
+              'scale=w=\'max(1920,iw)\':h=\'min(1080,ih)\':force_original_aspect_ratio=decrease:force_divisible_by=8',
+              '-c:v', 'libx265', '-c:a', 'aac', '-movflags', '+faststart',
+              '-map_metadata', '-1', '-y', '-f', 'mp4',
+              outputFilePart]
+            returncode, stderrList = self.runSubprocess(transcodeArgs)
+            if returncode == 0:
+                os.remove(f'{file}.lock')
+                os.rename(file, inputFile)
+                os.rename(outputFilePart, outputFile)
+            else:
+                self.writeErrorFile(errorFile, transcodeArgs, stderrList)
+            return None
 
 
 def main():
