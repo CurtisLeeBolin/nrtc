@@ -44,14 +44,17 @@ class NRTC(avtc.AVTC):
             print(f'{self.workingDir}/{file}')
 
             transcodeArgs = [
-              'ffmpeg', '-i', file, '-filter:v',
+              'ffmpeg', '-i', f'./{file}', '-filter:v',
               'scale=w=\'max(1920,iw)\':h=\'min(1080,ih)\':force_original_aspect_ratio=decrease:force_divisible_by=8',
               '-c:v', 'libx265', '-c:a', 'aac', '-movflags', '+faststart',
               '-map_metadata', '-1', '-y', '-f', 'mp4',
               outputFilePart]
+
+            os.makedirs(self.outputDir, exist_ok=True)
             returncode, stderrList = self.runSubprocess(transcodeArgs)
             if returncode == 0:
                 os.remove(f'{file}.lock')
+                os.makedirs(self.inputDir, exist_ok=True)
                 os.rename(file, inputFile)
                 os.rename(outputFilePart, outputFile)
             else:
